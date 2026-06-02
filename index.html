@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scientific Calculator Pro</title>
+    <style>
+        /* CSS Variables for Themes */
+        :root {
+            --bg-main: #1a1a1a;
+            --bg-display: #0d0d0d;
+            --bg-keypad: #2d2d2d;
+            --bg-key: #3d3d3d;
+            --bg-key-num: #1a1a1a;
+            --bg-key-op: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #888;
+            --accent-color: #ffd700;
+            --border-color: #3d3d3d;
+        }
+        
+        [data-theme="light"] {
+            --bg-main: #f3f4f6;
+            --bg-display: #e5e7eb;
+            --bg-keypad: #d1d5db;
+            --bg-key: #e5e7eb;
+            --bg-key-num: #ffffff;
+            --bg-key-op: #e5e7eb;
+            --text-main: #1f2937;
+            --text-muted: #4b5563;
+            --accent-color: #d97706;
+            --border-color: #9ca3af;
+        }
+        
+        [data-theme="oled"] {
+            --bg-main: #000000;
+            --bg-display: #000000;
+            --bg-keypad: #000000;
+            --bg-key: #111111;
+            --bg-key-num: #000000;
+            --bg-key-op: #181818;
+            --text-main: #ffffff;
+            --text-muted: #767676;
+            --accent-color: #ffd700;
+            --border-color: #262626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-keypad);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
+        }
+        
+        .header-btn {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 4px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        
+        .header-btn:active {
+            background: var(--bg-key);
+        }
+        
+        .header-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        
+        /* Display */
+        .display-container {
+            background: var(--bg-display);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            min-height: 180px;
+            position: relative;
+        }
+        
+        .history-display {
+            font-size: 14px;
+            color: var(--text-muted);
+            text-align: right;
+            min-height: 20px;
+            margin-bottom: 8px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .main-display {
+            font-size: 42px;
+            font-weight: 300;
+            text-align: right;
+            color: var(--text-main);
+            overflow-x: auto;
+            white-space: nowrap;
+            min-height: 50px;
+            letter-spacing: 1px;
+        }
+        
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 42px;
+            background: var(--text-main);
+            animation: blink 1s infinite;
+            vertical-align: bottom;
+            margin-left: 2px;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .mode-indicators {
+            display: flex;
+            gap: 12px;
+            padding: 6px 16px;
+            background: var(--bg-main);
+            font-size: 12px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .mode-indicators span.active {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+        
+        /* Keypad */
+        .keypad {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-keypad);
+            overflow-y: auto;
+        }
+        
+        .keypad-row {
+            display: flex;
+            flex: 1;
+            min-height: 56px;
+        }
+        
+        .key {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--bg-main);
+            background: var(--bg-key);
+            color: var(--text-main);
+            font-size: 18px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.1s, border-color 0.1s;
+            min-height: 56px;
+        }
+        
+        .key:active {
+            filter: brightness(1.2);
+        }
+        
+        .key-number {
+            background: var(--bg-key-num);
+            font-size: 24px;
+            font-weight: 500;
+        }
+        
+        .key-shift {
+            background: var(--accent-color);
+            color: #000;
+            font-weight: 700;
+        }
+        
+        .key-shift.active {
+            background: var(--accent-color);
+            opacity: 0.9;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+        }
+        
+        .key-del, .key-clr {
+            background: #4a7c2a;
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        .key-equals {
+            background: var(--bg-key-num);
+            font-size: 28px;
+        }
+        
+        .key-op {
+            background: var(--bg-key-op);
+            font-size: 22px;
+        }
+        
+        .key-mem {
+            background: var(--bg-key);
+            font-size: 16px;
+        }
+        
+        .key-sub {
+            font-size: 11px;
+            color: var(--accent-color);
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: 500;
+        }
+        
+        .key-main {
+            z-index: 2;
+        }
+        
+        .key-nav {
+            font-size: 14px;
+        }
+        
+        .key-nav .key-main {
+            font-size: 18px;
+        }
+        
+        /* Side Drawer */
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .drawer-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .drawer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 260px;
+            height: 100vh;
+            background: var(--bg-keypad);
+            z-index: 101;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        .drawer.open {
+            transform: translateX(0);
+        }
+        
+        .drawer-header {
+            padding: 16px;
+            background: var(--bg-main);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .drawer-header h2 {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .drawer-section {
+            padding: 8px 0;
+        }
+        
+        .drawer-section-title {
+            padding: 8px 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 4px;
+        }
+        
+        .drawer-item {
+            padding: 14px 16px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.2s;
+            color: var(--text-main);
+        }
+        
+        .drawer-item:hover, .drawer-item:active {
+            background: var(--bg-key);
+        }
+        
+        .drawer-item.active {
+            background: var(--bg-key);
+            border-left: 3px solid var(--accent-color);
+        }
+        
+        .drawer-icon {
+            width: 24px;
+            text-align: center;
+        }
+        
+        /* Side Panels (History, Settings, Help, About) */
+        .side-panel {
+            position: fixed;
+            top: 56px;
+            right: 0;
+            width: 100%;
+            max-width: 400px;
+            height: calc(100vh - 56px);
+            background: var(--bg-main);
+            z-index: 50;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .side-panel.open {
+            transform: translateX(0);
+        }
+        
+        .panel-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h3 {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .panel-close {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .panel-content {
+            padding: 16px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .history-clear {
+            color: #ff6b6b;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .history-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+        
+        .history-item:hover {
+            background: var(--bg-key);
+        }
+        
+        .history-expr {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        
+        .history-result {
+            font-size: 18px;
+            color: var(--text-main);
+            text-align: right;
+        }
+
+        /* Settings CSS */
+        .settings-group {
+            margin-bottom: 24px;
+        }
+
+        .settings-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-item span {
+            font-size: 16px;
+        }
+
+        .settings-item select {
+            background: var(--bg-key);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        /* Switch toggle for Vibration */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-key);
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        
+        /* Help Guide Styles */
+        .help-section {
+            margin-bottom: 16px;
+        }
+        .help-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--accent-color);
+        }
+        .help-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #444;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 200;
+            opacity: 0;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        /* Responsive */
+        @media (max-width: 360px) {
+            .key { font-size: 14px; min-height: 48px; }
+            .key-number { font-size: 20px; }
+            .main-display { font-size: 32px; }
+            .key-sub { font-size: 9px; }
+        }
+        
+        @media (min-width: 600px) {
+            .app-container {
+                max-width: 600px;
+                margin: 0 auto;
+                border-left: 1px solid var(--border-color);
+                border-right: 1px solid var(--border-color);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <button class="header-btn" id="menuBtn">☰</button>
+            <span class="header-title" id="calcMode">Scientific</span>
+            <button class="header-btn" id="historyBtn">↺</button>
+            <button class="header-btn" id="moreBtn">⋮</button>
+        </div>
+        
+        <!-- Display -->
+        <div class="display-container">
+            <div class="history-display" id="historyDisplay"></div>
+            <div class="main-display" id="mainDisplay">0<span class="cursor"></span></div>
+        </div>
+        
+        <!-- Mode Indicators -->
+        <div class="mode-indicators">
+            <span id="degIndicator" class="active">DEG</span>
+            <span id="radIndicator">RAD</span>
+            <span id="hypIndicator">HYP</span>
+            <span id="shiftIndicator">SHIFT</span>
+            <span id="memIndicator">M: 0</span>
+        </div>
+        
+        <!-- Scientific Keypad -->
+        <div class="keypad" id="keypad">
+            <!-- Row 1 -->
+            <div class="keypad-row">
+                <div class="key key-shift" id="shiftKey" data-action="shift">
+                    <span class="key-main">SHIFT</span>
+                </div>
+                <div class="key" data-action="insert" data-value="i">
+                    <span class="key-sub">i</span>
+                    <span class="key-main">i</span>
+                </div>
+                <div class="key" data-action="toggle" data-value="deg">
+                    <span class="key-sub">D°M'S</span>
+                    <span class="key-main">DEG</span>
+                </div>
+                <div class="key" data-action="toggle" data-value="std">
+                    <span class="key-sub">P:12</span>
+                    <span class="key-main">STD</span>
+                </div>
+                <div class="key key-mem" data-action="memory" data-value="MS">
+                    <span class="key-main">MS</span>
+                </div>
+                <div class="key key-mem" data-action="memory" data-value="MR">
+                    <span class="key-main">MR</span>
+                </div>
+            </div>
+            
+            <!-- Row 2 -->
+            <div class="keypad-row">
+                <div class="key" data-action="insert" data-value="frac">
+                    <span class="key-sub">a/b</span>
+                    <span class="key-main">a/b</span>
+                </div>
+                <div class="key" data-action="func" data-value="sin">
+                    <span class="key-sub shift-label">asin</span>
+                    <span class="key-main">Sin</span>
+                </div>
+                <div class="key" data-action="func" data-value="cos">
+                    <span class="key-sub shift-label">acos</span>
+                    <span class="key-main">Cos</span>
+                </div>
+                <div class="key" data-action="func" data-value="tan">
+                    <span class="key-sub shift-label">atan</span>
+                    <span class="key-main">Tan</span>
+                </div>
+                <div class="key key-op" data-action="insert" data-value="(">
+                    <span class="key-main">(</span>
+                </div>
+                <div class="key key-op" data-action="insert" data-value=")">
+                    <span class="key-main">)</span>
+                </div>
+            </div>
+            
+            <!-- Row 3 -->
+            <div class="keypad-row">
+                <div class="key" data-action="func" data-value="1/x">
+                    <span class="key-sub">1/x</span>
+                    <span class="key-main">1/x</span>
+                </div>
+                <div class="key" data-action="insert" data-value="π">
+                    <span class="key-sub">e</span>
+                    <span class="key-main">π</span>
+                </div>
+                <div class="key" data-action="func" data-value="ln">
+                    <span class="key-sub shift-label">eˣ</span>
+                    <span class="key-main">Ln</span>
+                </div>
+                <div class="key" data-action="func" data-value="log">
+                    <span class="key-sub shift-label">10ˣ</span>
+                    <span class="key-main">Log</span>
+                </div>
+                <div class="key key-nav" data-action="nav" data-value="left">
+                    <span class="key-main">◀</span>
+                </div>
+                <div class="key key-nav" data-action="nav" data-value="right">
+                    <span class="key-main">▶</span>
+                </div>
+            </div>
+            
+            <!-- Row 4 -->
+            <div class="keypad-row">
+                <div class="key" data-action="func" data-value="x²">
+                    <span class="key-sub">√x</span>
+                    <span class="key-main">x²</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value="7">
+                    <span class="key-sub">Ceil</span>
+                    <span class="key-main">7</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value="8">
+                    <span class="key-sub">Re</span>
+                    <span class="key-main">8</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value="9">
+                    <span class="key-sub">Im</span>
+                    <span class="key-main">9</span>
+                </div>
+                <div class="key key-del" data-action="delete">
+                    <span class="key-main">DEL</span>
+                </div>
+                <div class="key key-clr" data-action="clear">
+                    <span class="key-main">CLR</span>
+                </div>
+            </div>
+            
+            <!-- Row 5 -->
+            <div class="keypad-row">
+                <div class="key" data-action="func" data-value="√">
+                    <span class="key-sub">xʸ</span>
+                    <span class="key-main">√</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value="4">
+                    <span class="key-sub">Floor</span>
+                    <span class="key-main">4</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value="5">
+                    <span class="key-sub">Abs</span>
+                    <span class="key-main">5</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value="6">
+                    <span class="key-sub">Arg</span>
+                    <span class="key-main">6</span>
+                </div>
+                <div class="key key-op" data-action="insert" data-value="×">
+                    <span class="key-sub">Conj</span>
+                    <span class="key-main">×</span>
+                </div>
+                <div class="key key-op" data-action="insert" data-value="÷">
+                    <span class="key-sub">Mod</span>
+                    <span class="key-main">÷</span>
+                </div>
+            </div>
+            
+            <!-- Row 6 -->
+            <div class="keypad-row">
+                <div class="key" data-action="func" data-value="%">
+                    <span class="key-sub">Δ%</span>
+                    <span class="key-main">%</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value="1">
+                    <span class="key-sub">x!</span>
+                    <span class="key-main">1</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value="2">
+                    <span class="key-sub">nPr</span>
+                    <span class="key-main">2</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value="3">
+                    <span class="key-sub">nCr</span>
+                    <span class="key-main">3</span>
+                </div>
+                <div class="key key-op" data-action="insert" data-value="+">
+                    <span class="key-sub">M+</span>
+                    <span class="key-main">+</span>
+                </div>
+                <div class="key key-op" data-action="insert" data-value="−">
+                    <span class="key-sub">M−</span>
+                    <span class="key-main">−</span>
+                </div>
+            </div>
+            
+            <!-- Row 7 -->
+            <div class="keypad-row">
+                <div class="key" data-action="insert" data-value="EEX">
+                    <span class="key-sub">CONST</span>
+                    <span class="key-main">EEX</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value="0">
+                    <span class="key-sub">CONV</span>
+                    <span class="key-main">0</span>
+                </div>
+                <div class="key key-number" data-action="insert" data-value=".">
+                    <span class="key-sub">STATS</span>
+                    <span class="key-main">.</span>
+                </div>
+                <div class="key key-op" data-action="insert" data-value="±">
+                    <span class="key-sub">Random</span>
+                    <span class="key-main">±</span>
+                </div>
+                <div class="key key-equals" data-action="equals" style="flex: 2;">
+                    <span class="key-main">=</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Basic Keypad (Hides automatically in scientific mode) -->
+        <div class="keypad" id="keypadBasic" style="display: none;">
+            <div class="keypad-row">
+                <div class="key key-clr" data-action="clear"><span class="key-main">CLR</span></div>
+                <div class="key key-del" data-action="delete"><span class="key-main">DEL</span></div>
+                <div class="key key-op" data-action="insert" data-value="%"><span class="key-main">%</span></div>
+                <div class="key key-op" data-action="insert" data-value="÷"><span class="key-main">÷</span></div>
+            </div>
+            <div class="keypad-row">
+                <div class="key key-number" data-action="insert" data-value="7"><span class="key-main">7</span></div>
+                <div class="key key-number" data-action="insert" data-value="8"><span class="key-main">8</span></div>
+                <div class="key key-number" data-action="insert" data-value="9"><span class="key-main">9</span></div>
+                <div class="key key-op" data-action="insert" data-value="×"><span class="key-main">×</span></div>
+            </div>
+            <div class="keypad-row">
+                <div class="key key-number" data-action="insert" data-value="4"><span class="key-main">4</span></div>
+                <div class="key key-number" data-action="insert" data-value="5"><span class="key-main">5</span></div>
+                <div class="key key-number" data-action="insert" data-value="6"><span class="key-main">6</span></div>
+                <div class="key key-op" data-action="insert" data-value="−"><span class="key-main">−</span></div>
+            </div>
+            <div class="keypad-row">
+                <div class="key key-number" data-action="insert" data-value="1"><span class="key-main">1</span></div>
+                <div class="key key-number" data-action="insert" data-value="2"><span class="key-main">2</span></div>
+                <div class="key key-number" data-action="insert" data-value="3"><span class="key-main">3</span></div>
+                <div class="key key-op" data-action="insert" data-value="+"><span class="key-main">+</span></div>
+            </div>
+            <div class="keypad-row">
+                <div class="key key-op" data-action="insert" data-value="±"><span class="key-main">±</span></div>
+                <div class="key key-number" data-action="insert" data-value="0"><span class="key-main">0</span></div>
+                <div class="key key-number" data-action="insert" data-value="."><span class="key-main">.</span></div>
+                <div class="key key-equals" data-action="equals"><span class="key-main">=</span></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Drawer Menu -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+    <div class="drawer" id="drawer">
+        <div class="drawer-header">
+            <span style="font-size: 24px;">🧮</span>
+            <h2>Calculator Pro</h2>
+        </div>
+        <div class="drawer-section">
+            <div class="drawer-section-title">Mode</div>
+            <div class="drawer-item" id="modeBasic" data-mode="basic">
+                <span class="drawer-icon">🔢</span> Basic
+            </div>
+            <div class="drawer-item active" id="modeScientific" data-mode="scientific">
+                <span class="drawer-icon">🔬</span> Scientific
+            </div>
+        </div>
+        <div class="drawer-section">
+            <div class="drawer-section-title">Application</div>
+            <div class="drawer-item" id="menuUpgrade">
+                <span class="drawer-icon">⭐</span> Upgrade
+            </div>
+            <div class="drawer-item" id="menuSettings">
+                <span class="drawer-icon">⚙️</span> Settings
+            </div>
+            <div class="drawer-item" id="menuHelp">
+                <span class="drawer-icon">❓</span> Help & Guide
+            </div>
+            <div class="drawer-item" id="menuAbout">
+                <span class="drawer-icon">ℹ️</span> About
+            </div>
+        </div>
+    </div>
+    
+    <!-- History Panel -->
+    <div class="side-panel" id="historyPanel">
+        <div class="panel-header">
+            <h3>History</h3>
+            <span class="history-clear" id="clearHistory">Clear All</span>
+            <button class="panel-close" id="closeHistory">×</button>
+        </div>
+        <div id="historyList" class="panel-content"></div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="side-panel" id="settingsPanel">
+        <div class="panel-header">
+            <h3>Settings</h3>
+            <button class="panel-close" id="closeSettings">×</button>
+        </div>
+        <div class="panel-content">
+            <div class="settings-group">
+                <span class="settings-label">General</span>
+                <div class="settings-item">
+                    <span>Theme Mode</span>
+                    <select id="themeSelect">
+                        <option value="dark">Dark Theme</option>
+                        <option value="light">Light Theme</option>
+                        <option value="oled">OLED Black</option>
+                    </select>
+                </div>
+                <div class="settings-item">
+                    <span>Key Vibration</span>
+                    <label class="switch">
+                        <input type="checkbox" id="vibrateToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-group">
+                <span class="settings-label">Calculation</span>
+                <div class="settings-item">
+                    <span>Decimal Precision</span>
+                    <select id="precisionSelect">
+                        <option value="4">4 Decimals</option>
+                        <option value="6">6 Decimals</option>
+                        <option value="8">8 Decimals</option>
+                        <option value="10">10 Decimals</option>
+                        <option value="12" selected>12 Decimals</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Panel -->
+    <div class="side-panel" id="helpPanel">
+        <div class="panel-header">
+            <h3>Help & Guide</h3>
+            <button class="panel-close" id="closeHelp">×</button>
+        </div>
+        <div class="panel-content">
+            <div class="help-section">
+                <p class="help-title">Basic Mode</p>
+                <p class="help-desc">Simple layout for everyday additions, subtractions, multiplications, and divisions.</p>
+            </div>
+            <div class="help-section">
+                <p class="help-title">SHIFT Operations</p>
+                <p class="help-desc">Pressing SHIFT allows you to access alternative gold labels on key tops (e.g. "Sin" becomes inverse "asin").</p>
+            </div>
+            <div class="help-section">
+                <p class="help-title">Trigonometric Units</p>
+                <p class="help-desc">Use the DEG/RAD toggle to switch between Degrees and Radians calculations easily.</p>
+            </div>
+            <div class="help-section">
+                <p class="help-title">Memory functions</p>
+                <p class="help-desc">
+                    <strong>MS</strong> saves, <strong>MR</strong> retrieves, and indicator shows your current memory status.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Panel -->
+    <div class="side-panel" id="aboutPanel">
+        <div class="panel-header">
+            <h3>About</h3>
+            <button class="panel-close" id="closeAbout">×</button>
+        </div>
+        <div class="panel-content" style="text-align: center; padding-top: 32px;">
+            <span style="font-size: 64px;">🧮</span>
+            <h2 style="margin-top: 16px; font-weight: 500;">Calculator Pro</h2>
+            <p style="color: var(--text-muted); margin-top: 4px;">Version 2.0.0</p>
+            <p style="font-size: 14px; line-height: 1.6; margin-top: 24px; color: var(--text-muted);">
+                An elegant, customizable, and high-performance scientific calculator designed for smooth day-to-day and scientific computations.
+            </p>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 48px;">© 2026 Calculator Pro Inc.</p>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Calculator State
+        const state = {
+            display: '0',
+            expression: '',
+            cursorPos: 1,
+            shift: false,
+            hyp: false,
+            deg: true,
+            memory: 0,
+            history: [],
+            mode: 'scientific',
+            lastAnswer: 0,
+            isNewEntry: true,
+            vibrateEnabled: true,
+            precision: 12
+        };
+        
+        // DOM Elements
+        const mainDisplay = document.getElementById('mainDisplay');
+        const historyDisplay = document.getElementById('historyDisplay');
+        const shiftKey = document.getElementById('shiftKey');
+        const degIndicator = document.getElementById('degIndicator');
+        const radIndicator = document.getElementById('radIndicator');
+        const hypIndicator = document.getElementById('hypIndicator');
+        const shiftIndicator = document.getElementById('shiftIndicator');
+        const memIndicator = document.getElementById('memIndicator');
+        const drawer = document.getElementById('drawer');
+        const drawerOverlay = document.getElementById('drawerOverlay');
+        const toast = document.getElementById('toast');
+        
+        // Panels
+        const historyPanel = document.getElementById('historyPanel');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const helpPanel = document.getElementById('helpPanel');
+        const aboutPanel = document.getElementById('aboutPanel');
+
+        // Close Side Panels
+        function closeAllPanels() {
+            historyPanel.classList.remove('open');
+            settingsPanel.classList.remove('open');
+            helpPanel.classList.remove('open');
+            aboutPanel.classList.remove('open');
+        }
+        
+        document.getElementById('closeHistory').addEventListener('click', closeAllPanels);
+        document.getElementById('closeSettings').addEventListener('click', closeAllPanels);
+        document.getElementById('closeHelp').addEventListener('click', closeAllPanels);
+        document.getElementById('closeAbout').addEventListener('click', closeAllPanels);
+
+        // Haptic Feedback (Vibration)
+        function triggerHaptic() {
+            if (state.vibrateEnabled && navigator.vibrate) {
+                navigator.vibrate(12);
+            }
+        }
+
+        // Update Display
+        function updateDisplay() {
+            let displayText = state.display;
+            if (state.display === '') displayText = '0';
+            
+            // Insert cursor
+            const beforeCursor = displayText.substring(0, state.cursorPos);
+            const afterCursor = displayText.substring(state.cursorPos);
+            mainDisplay.innerHTML = beforeCursor + '<span class="cursor"></span>' + afterCursor;
+            
+            // Update indicators
+            degIndicator.classList.toggle('active', state.deg);
+            radIndicator.classList.toggle('active', !state.deg);
+            hypIndicator.classList.toggle('active', state.hyp);
+            hypIndicator.style.color = state.hyp ? 'var(--accent-color)' : 'var(--text-muted)';
+            shiftIndicator.classList.toggle('active', state.shift);
+            shiftIndicator.style.color = state.shift ? 'var(--accent-color)' : 'var(--text-muted)';
+            memIndicator.textContent = `M: ${state.memory}`;
+            
+            // Update shift labels
+            document.querySelectorAll('.shift-label').forEach(el => {
+                el.style.display = state.shift ? 'block' : 'none';
+            });
+            
+            if(shiftKey) {
+                shiftKey.classList.toggle('active', state.shift);
+            }
+        }
+        
+        // Show Toast
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        // Math Functions
+        function factorial(n) {
+            if (n < 0) return NaN;
+            if (n === 0 || n === 1) return 1;
+            let result = 1;
+            for (let i = 2; i <= n; i++) result *= i;
+            return result;
+        }
+        
+        function nPr(n, r) {
+            if (r > n) return 0;
+            return factorial(n) / factorial(n - r);
+        }
+        
+        function nCr(n, r) {
+            if (r > n) return 0;
+            return factorial(n) / (factorial(r) * factorial(n - r));
+        }
+        
+        function toRadians(deg) {
+            return deg * Math.PI / 180;
+        }
+        
+        function toDegrees(rad) {
+            return rad * 180 / Math.PI;
+        }
+        
+        // Safe Evaluate
+        function safeEvaluate(expr) {
+            let cleanExpr = expr
+                .replace(/×/g, '*')
+                .replace(/÷/g, '/')
+                .replace(/−/g, '-')
+                .replace(/π/g, 'Math.PI')
+                .replace(/e(?![xp])/g, 'Math.E')
+                .replace(/\^/g, '**')
+                .replace(/EEX/g, '*10**');
+            
+            // Handle functions
+            cleanExpr = cleanExpr.replace(/sinh\(/g, 'Math.sinh(');
+            cleanExpr = cleanExpr.replace(/cosh\(/g, 'Math.cosh(');
+            cleanExpr = cleanExpr.replace(/tanh\(/g, 'Math.tanh(');
+            cleanExpr = cleanExpr.replace(/asinh\(/g, 'Math.asinh(');
+            cleanExpr = cleanExpr.replace(/acosh\(/g, 'Math.acosh(');
+            cleanExpr = cleanExpr.replace(/atanh\(/g, 'Math.atanh(');
+            
+            cleanExpr = cleanExpr.replace(/asin\(/g, 'Math.asin(');
+            cleanExpr = cleanExpr.replace(/acos\(/g, 'Math.acos(');
+            cleanExpr = cleanExpr.replace(/atan\(/g, 'Math.atan(');
+            
+            cleanExpr = cleanExpr.replace(/sin\(/g, state.deg ? 'Math.sin(toRadians(' : 'Math.sin(');
+            cleanExpr = cleanExpr.replace(/cos\(/g, state.deg ? 'Math.cos(toRadians(' : 'Math.cos(');
+            cleanExpr = cleanExpr.replace(/tan\(/g, state.deg ? 'Math.tan(toRadians(' : 'Math.tan(');
+            
+            if (state.deg) {
+                let count = (cleanExpr.match(/toRadians\(/g) || []).length;
+                for (let i = 0; i < count; i++) {
+                    cleanExpr = cleanExpr.replace(/toRadians\(([^)]*)\)/, 'toRadians($1))');
+                }
+            }
+            
+            cleanExpr = cleanExpr.replace(/ln\(/g, 'Math.log(');
+            cleanExpr = cleanExpr.replace(/log\(/g, 'Math.log10(');
+            cleanExpr = cleanExpr.replace(/√\(/g, 'Math.sqrt(');
+            cleanExpr = cleanExpr.replace(/abs\(/g, 'Math.abs(');
+            cleanExpr = cleanExpr.replace(/floor\(/g, 'Math.floor(');
+            cleanExpr = cleanExpr.replace(/ceil\(/g, 'Math.ceil(');
+            cleanExpr = cleanExpr.replace(/round\(/g, 'Math.round(');
+            
+            cleanExpr = cleanExpr.replace(/(\d+)²/g, '($1)**2');
+            cleanExpr = cleanExpr.replace(/(\d+)ʸ/g, '($1)**');
+            cleanExpr = cleanExpr.replace(/1\/([\d.]+)/g, '1/($1)');
+            cleanExpr = cleanExpr.replace(/(\d+)!/g, 'factorial($1)');
+            cleanExpr = cleanExpr.replace(/(\d+)%/g, '($1/100)');
+            
+            try {
+                const result = eval(cleanExpr);
+                return result;
+            } catch (e) {
+                return NaN;
+            }
+        }
+        
+        // Insert at cursor
+        function insertAtCursor(text) {
+            if (state.isNewEntry && !isNaN(text) && text !== '.') {
+                state.display = '';
+                state.cursorPos = 0;
+                state.isNewEntry = false;
+            }
+            
+            const before = state.display.substring(0, state.cursorPos);
+            const after = state.display.substring(state.cursorPos);
+            state.display = before + text + after;
+            state.cursorPos += text.length;
+            state.isNewEntry = false;
+            updateDisplay();
+        }
+        
+        // Handle Key Press
+        function handleKey(action, value) {
+            triggerHaptic();
+            switch (action) {
+                case 'shift':
+                    state.shift = !state.shift;
+                    updateDisplay();
+                    break;
+                    
+                case 'insert':
+                    if (value === 'π') {
+                        insertAtCursor('π');
+                    } else if (value === 'i') {
+                        insertAtCursor('i');
+                    } else if (value === '±') {
+                        if (state.display !== '0') {
+                            if (state.display.startsWith('-')) {
+                                state.display = state.display.substring(1);
+                                state.cursorPos--;
+                            } else {
+                                state.display = '-' + state.display;
+                                state.cursorPos++;
+                            }
+                        }
+                        updateDisplay();
+                    } else if (value === 'EEX') {
+                        insertAtCursor('EEX');
+                    } else if (value === 'frac') {
+                        insertAtCursor('/');
+                    } else {
+                        insertAtCursor(value);
+                    }
+                    break;
+                    
+                case 'func':
+                    let func = value;
+                    if (state.shift) {
+                        switch (value) {
+                            case 'sin': func = 'asin'; break;
+                            case 'cos': func = 'acos'; break;
+                            case 'tan': func = 'atan'; break;
+                            case 'ln': func = 'e^'; break;
+                            case 'log': func = '10^'; break;
+                            case 'x²': func = '√'; break;
+                            case '√': func = '^'; break;
+                            case '1/x': func = '1/x'; break;
+                            case '%': func = 'Δ%'; break;
+                        }
+                        state.shift = false;
+                    }
+                    
+                    if (state.hyp) {
+                        if (['sin', 'cos', 'tan'].includes(func)) {
+                            func = func + 'h';
+                        } else if (['asin', 'acos', 'atan'].includes(func)) {
+                            func = 'a' + func.substring(1) + 'h';
+                        }
+                    }
+                    
+                    if (['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh', 'ln', 'log', '√', 'abs', 'floor', 'ceil'].includes(func)) {
+                        insertAtCursor(func + '(');
+                    } else if (func === 'x²') {
+                        insertAtCursor('²');
+                    } else if (func === '^') {
+                        insertAtCursor('^');
+                    } else if (func === '10^') {
+                        insertAtCursor('10^');
+                    } else if (func === 'e^') {
+                        insertAtCursor('e^');
+                    } else if (func === '1/x') {
+                        if (state.display !== '0') {
+                            const val = parseFloat(state.display);
+                            if (!isNaN(val) && val !== 0) {
+                                state.display = (1/val).toString();
+                                state.cursorPos = state.display.length;
+                                state.isNewEntry = true;
+                            }
+                        }
+                    } else if (func === '%') {
+                        insertAtCursor('%');
+                    }
+                    updateDisplay();
+                    break;
+                    
+                case 'toggle':
+                    if (value === 'deg') {
+                        state.deg = !state.deg;
+                        showToast(state.deg ? 'DEG Mode' : 'RAD Mode');
+                    } else if (value === 'std') {
+                        showToast('Standard Notation');
+                    }
+                    updateDisplay();
+                    break;
+                    
+                case 'memory':
+                    const currentVal = parseFloat(state.display) || 0;
+                    switch (value) {
+                        case 'MS':
+                            state.memory = currentVal;
+                            showToast(`Memory Saved: ${currentVal}`);
+                            break;
+                        case 'MR':
+                            state.display = state.memory.toString();
+                            state.cursorPos = state.display.length;
+                            state.isNewEntry = true;
+                            break;
+                        case 'MC':
+                            state.memory = 0;
+                            showToast('Memory Cleared');
+                            break;
+                        case 'M+':
+                            state.memory += currentVal;
+                            showToast(`Memory: ${state.memory}`);
+                            break;
+                        case 'M-':
+                            state.memory -= currentVal;
+                            showToast(`Memory: ${state.memory}`);
+                            break;
+                    }
+                    updateDisplay();
+                    break;
+                    
+                case 'delete':
+                    if (state.cursorPos > 0) {
+                        state.display = state.display.substring(0, state.cursorPos - 1) + state.display.substring(state.cursorPos);
+                        state.cursorPos--;
+                        if (state.display === '') {
+                            state.display = '0';
+                            state.isNewEntry = true;
+                        }
+                    }
+                    updateDisplay();
+                    break;
+                    
+                case 'clear':
+                    state.display = '0';
+                    state.expression = '';
+                    state.cursorPos = 1;
+                    state.isNewEntry = true;
+                    historyDisplay.textContent = '';
+                    updateDisplay();
+                    break;
+                    
+                case 'nav':
+                    if (value === 'left' && state.cursorPos > 0) {
+                        state.cursorPos--;
+                    } else if (value === 'right' && state.cursorPos < state.display.length) {
+                        state.cursorPos++;
+                    }
+                    updateDisplay();
+                    break;
+                    
+                case 'equals':
+                    calculate();
+                    break;
+            }
+        }
+        
+        // Calculate
+        function calculate() {
+            const expr = state.display;
+            if (!expr || expr === '0') return;
+            
+            historyDisplay.textContent = expr + ' =';
+            
+            let evalExpr = expr;
+            
+            if (evalExpr.includes('nPr')) {
+                const parts = evalExpr.split('nPr');
+                if (parts.length === 2) {
+                    const n = parseFloat(parts[0]);
+                    const r = parseFloat(parts[1]);
+                    const result = nPr(n, r);
+                    state.display = result.toString();
+                    state.cursorPos = state.display.length;
+                    state.isNewEntry = true;
+                    addToHistory(expr, result);
+                    updateDisplay();
+                    return;
+                }
+            }
+            
+            if (evalExpr.includes('nCr')) {
+                const parts = evalExpr.split('nCr');
+                if (parts.length === 2) {
+                    const n = parseFloat(parts[0]);
+                    const r = parseFloat(parts[1]);
+                    const result = nCr(n, r);
+                    state.display = result.toString();
+                    state.cursorPos = state.display.length;
+                    state.isNewEntry = true;
+                    addToHistory(expr, result);
+                    updateDisplay();
+                    return;
+                }
+            }
+            
+            evalExpr = evalExpr.replace(/(\d+)!/g, (match, n) => factorial(parseInt(n)));
+            
+            const result = safeEvaluate(evalExpr);
+            
+            if (isNaN(result) || !isFinite(result)) {
+                state.display = 'Error';
+                showToast('Error');
+            } else {
+                let formatted = result;
+                if (Math.abs(result) > 1e10 || (Math.abs(result) < 1e-10 && result !== 0)) {
+                    formatted = result.toExponential(state.precision - 2);
+                } else {
+                    formatted = parseFloat(result.toPrecision(state.precision)).toString();
+                }
+                state.display = formatted;
+                state.lastAnswer = result;
+                addToHistory(expr, result);
+            }
+            
+            state.cursorPos = state.display.length;
+            state.isNewEntry = true;
+            updateDisplay();
+        }
+        
+        // Add to History
+        function addToHistory(expr, result) {
+            state.history.unshift({ expr, result });
+            if (state.history.length > 50) state.history.pop();
+            updateHistoryPanel();
+        }
+        
+        // Update History Panel
+        function updateHistoryPanel() {
+            const list = document.getElementById('historyList');
+            if (state.history.length === 0) {
+                list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No history yet</div>';
+                return;
+            }
+            
+            list.innerHTML = state.history.map((item, i) => `
+                <div class="history-item" data-index="${i}">
+                    <div class="history-expr">${item.expr}</div>
+                    <div class="history-result">= ${item.result}</div>
+                </div>
+            `).join('');
+            
+            list.querySelectorAll('.history-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const idx = parseInt(item.dataset.index);
+                    state.display = state.history[idx].result.toString();
+                    state.cursorPos = state.display.length;
+                    state.isNewEntry = true;
+                    updateDisplay();
+                    closeAllPanels();
+                });
+            });
+        }
+        
+        // Bind Keys for both keyboards
+        function setupKeys() {
+            document.querySelectorAll('.key').forEach(key => {
+                key.addEventListener('click', () => {
+                    const action = key.dataset.action;
+                    const value = key.dataset.value;
+                    handleKey(action, value);
+                });
+            });
+        }
+        
+        // Drawer Menu Interactions
+        document.getElementById('menuBtn').addEventListener('click', () => {
+            drawer.classList.add('open');
+            drawerOverlay.classList.add('open');
+        });
+        
+        drawerOverlay.addEventListener('click', () => {
+            drawer.classList.remove('open');
+            drawerOverlay.classList.remove('open');
+        });
+        
+        // Toggle History Panel
+        document.getElementById('historyBtn').addEventListener('click', () => {
+            closeAllPanels();
+            historyPanel.classList.toggle('open');
+            updateHistoryPanel();
+        });
+        
+        document.getElementById('clearHistory').addEventListener('click', () => {
+            state.history = [];
+            updateHistoryPanel();
+            showToast('History Cleared');
+        });
+        
+        // Mode Switchers (Basic vs Scientific)
+        document.getElementById('modeBasic').addEventListener('click', () => {
+            state.mode = 'basic';
+            document.getElementById('modeBasic').classList.add('active');
+            document.getElementById('modeScientific').classList.remove('active');
+            document.getElementById('calcMode').textContent = 'Basic';
+            document.getElementById('keypad').style.display = 'none';
+            document.getElementById('keypadBasic').style.display = 'flex';
+            drawer.classList.remove('open');
+            drawerOverlay.classList.remove('open');
+            showToast('Basic Mode');
+        });
+        
+        document.getElementById('modeScientific').addEventListener('click', () => {
+            state.mode = 'scientific';
+            document.getElementById('modeScientific').classList.add('active');
+            document.getElementById('modeBasic').classList.remove('active');
+            document.getElementById('calcMode').textContent = 'Scientific';
+            document.getElementById('keypad').style.display = 'flex';
+            document.getElementById('keypadBasic').style.display = 'none';
+            drawer.classList.remove('open');
+            drawerOverlay.classList.remove('open');
+            showToast('Scientific Mode');
+        });
+        
+        // Menu Clicks
+        document.getElementById('menuUpgrade').addEventListener('click', () => {
+            showToast('You have the Pro version!');
+            drawer.classList.remove('open');
+            drawerOverlay.classList.remove('open');
+        });
+
+        document.getElementById('menuSettings').addEventListener('click', () => {
+            closeAllPanels();
+            settingsPanel.classList.add('open');
+            drawer.classList.remove('open');
+            drawerOverlay.classList.remove('open');
+        });
+        
+        document.getElementById('menuHelp').addEventListener('click', () => {
+            closeAllPanels();
+            helpPanel.classList.add('open');
+            drawer.classList.remove('open');
+            drawerOverlay.classList.remove('open');
+        });
+        
+        document.getElementById('menuAbout').addEventListener('click', () => {
+            closeAllPanels();
+            aboutPanel.classList.add('open');
+            drawer.classList.remove('open');
+            drawerOverlay.classList.remove('open');
+        });
+
+        // Settings Controllers Logic
+        document.getElementById('themeSelect').addEventListener('change', (e) => {
+            document.documentElement.setAttribute('data-theme', e.target.value);
+            showToast(`Theme switched to ${e.target.value}`);
+        });
+
+        document.getElementById('vibrateToggle').addEventListener('change', (e) => {
+            state.vibrateEnabled = e.target.checked;
+            showToast(state.vibrateEnabled ? 'Vibration enabled' : 'Vibration disabled');
+        });
+
+        document.getElementById('precisionSelect').addEventListener('change', (e) => {
+            state.precision = parseInt(e.target.value);
+            showToast(`Precision set to ${state.precision}`);
+        });
+        
+        // Keyboard Support
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') handleKey('insert', e.key);
+            else if (e.key === '.') handleKey('insert', '.');
+            else if (e.key === '+') handleKey('insert', '+');
+            else if (e.key === '-') handleKey('insert', '−');
+            else if (e.key === '*') handleKey('insert', '×');
+            else if (e.key === '/') handleKey('insert', '÷');
+            else if (e.key === '(') handleKey('insert', '(');
+            else if (e.key === ')') handleKey('insert', ')');
+            else if (e.key === 'Enter' || e.key === '=') handleKey('equals');
+            else if (e.key === 'Backspace') handleKey('delete');
+            else if (e.key === 'Escape') handleKey('clear');
+            else if (e.key === 'ArrowLeft') handleKey('nav', 'left');
+            else if (e.key === 'ArrowRight') handleKey('nav', 'right');
+        });
+        
+        // Initialize App
+        setupKeys();
+        updateDisplay();
+        updateHistoryPanel();
+    </script>
+</body>
+</html>
